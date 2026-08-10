@@ -10,6 +10,7 @@ import {
   Upload,
   Code2,
   Eye,
+  Github,
 } from "lucide-vue-next";
 import { CanvasConfig } from "../types/route";
 
@@ -81,6 +82,18 @@ const onFileImport = (e: Event) => {
         <h1>LinkAnimation</h1>
         <span class="badge">路径动画编辑器</span>
       </div>
+
+      <!-- GitHub Link on Left -->
+      <a
+        href="https://github.com/cww978/LinkAnimation"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="github-left-link"
+        title="访问 GitHub 开源项目仓库"
+      >
+        <Github class="w-4 h-4" />
+        <span>GitHub</span>
+      </a>
     </div>
 
     <!-- Center Stage Controls -->
@@ -200,6 +213,29 @@ const onFileImport = (e: Event) => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.github-left-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.github-left-link:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .logo-icon {
@@ -336,6 +372,10 @@ const onFileImport = (e: Event) => {
   background: #1e293b;
   color: #cbd5e1;
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+.github-btn {
+  text-decoration: none;
 }
 
 .btn-secondary:hover:not(:disabled) {
