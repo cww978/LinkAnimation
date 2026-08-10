@@ -29,9 +29,19 @@
         ></div>
 
         <!-- SVG Path & Line Connections Layer -->
-        <svg class="svg-layer" :width="canvasConfig.width" :height="canvasConfig.height">
+        <svg
+          class="svg-layer"
+          :width="canvasConfig.width"
+          :height="canvasConfig.height"
+        >
           <defs>
-            <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient
+              id="pathGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
               <stop offset="0%" stop-color="#38bdf8" />
               <stop offset="50%" stop-color="#818cf8" />
               <stop offset="100%" stop-color="#c084fc" />
@@ -124,7 +134,12 @@
         >
           <div class="node-dot">
             <span class="node-label">P{{ index }}</span>
-            <span v-if="isPointHasValidImageSwitch(point)" class="image-switch-indicator" title="到达此点切换图片">🖼️</span>
+            <span
+              v-if="isPointHasValidImageSwitch(point)"
+              class="image-switch-indicator"
+              title="到达此点切换图片"
+              >🖼️</span
+            >
           </div>
         </div>
 
@@ -144,7 +159,7 @@
 
           <!-- Custom Div Content -->
           <div v-else class="subject-div-content">
-            <span>{{ subjectConfig.text || '🚀' }}</span>
+            <span>{{ subjectConfig.text || "🚀" }}</span>
           </div>
         </div>
       </div>
@@ -153,330 +168,375 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Point, CanvasConfig, SubjectConfig, AnimationConfig } from '../types/route'
-import { generateSvgPathD } from '../utils/spline'
-import { InterpolatedPoint } from '../utils/spline'
+import { ref, computed, onMounted, onUnmounted, type CSSProperties } from "vue";
+import {
+  Point,
+  CanvasConfig,
+  SubjectConfig,
+  AnimationConfig,
+} from "../types/route";
+import { generateSvgPathD } from "../utils/spline";
+import { InterpolatedPoint } from "../utils/spline";
 
 const props = defineProps<{
-  points: Point[]
-  selectedPointId: string | null
-  hoveredSegment: { insertIndex: number; point: { x: number; y: number } } | null
-  canvasConfig: CanvasConfig
-  subjectConfig: SubjectConfig
-  animConfig?: AnimationConfig
-  zoomScale: number
-  currentPosition: InterpolatedPoint
-  activeImageUrl?: string | null
-  curveType: 'smooth' | 'linear'
-}>()
+  points: Point[];
+  selectedPointId: string | null;
+  hoveredSegment: {
+    insertIndex: number;
+    point: { x: number; y: number };
+  } | null;
+  canvasConfig: CanvasConfig;
+  subjectConfig: SubjectConfig;
+  animConfig?: AnimationConfig;
+  zoomScale: number;
+  currentPosition: InterpolatedPoint;
+  activeImageUrl?: string | null;
+  curveType: "smooth" | "linear";
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:zoomScale', val: number): void
-  (e: 'add-point', x: number, y: number): void
-  (e: 'insert-point', index: number, x: number, y: number): void
-  (e: 'update-point', id: string, x: number, y: number): void
-  (e: 'select-point', id: string): void
-  (e: 'delete-point', id: string): void
-  (e: 'mouse-move-stage', x: number, y: number): void
-  (e: 'mouse-leave-stage'): void
-}>()
+  (e: "update:zoomScale", val: number): void;
+  (e: "add-point", x: number, y: number): void;
+  (e: "insert-point", index: number, x: number, y: number): void;
+  (e: "update-point", id: string, x: number, y: number): void;
+  (e: "select-point", id: string): void;
+  (e: "delete-point", id: string): void;
+  (e: "mouse-move-stage", x: number, y: number): void;
+  (e: "mouse-leave-stage"): void;
+}>();
 
-const wrapperRef = ref<HTMLDivElement | null>(null)
-const draggingPointId = ref<string | null>(null)
-const dragOffset = ref<{ x: number; y: number }>({ x: 0, y: 0 })
+const wrapperRef = ref<HTMLDivElement | null>(null);
+const draggingPointId = ref<string | null>(null);
+const dragOffset = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 
 // Canvas Panning via Scrollbars
-const isPanning = ref(false)
-const isSpacePressed = ref(false)
-let isPanningPrep = false
-let hasMovedDuringPan = false
-let panStart = { scrollLeft: 0, scrollTop: 0, clientX: 0, clientY: 0 }
+const isPanning = ref(false);
+const isSpacePressed = ref(false);
+let isPanningPrep = false;
+let hasMovedDuringPan = false;
+let panStart = { scrollLeft: 0, scrollTop: 0, clientX: 0, clientY: 0 };
 
 // Helper to check if point has valid image switch
 const isPointHasValidImageSwitch = (point: Point) => {
-  const id = point.switchImageId
-  return !!id && id !== 'null' && id !== 'undefined' && id !== ''
-}
+  const id = point.switchImageId;
+  return !!id && id !== "null" && id !== "undefined" && id !== "";
+};
 
 // Compute subject image source (uses active playback image, or default image)
 const currentSubjectImageSrc = computed(() => {
-  if (props.activeImageUrl) return props.activeImageUrl
+  if (props.activeImageUrl) return props.activeImageUrl;
 
-  const defImg = props.subjectConfig.images?.find((img) => img.id === props.subjectConfig.defaultImageId || img.isDefault)
-  return defImg?.url || props.subjectConfig.images?.[0]?.url || props.subjectConfig.image || null
-})
+  const defImg = props.subjectConfig.images?.find(
+    (img) => img.id === props.subjectConfig.defaultImageId || img.isDefault,
+  );
+  return (
+    defImg?.url ||
+    props.subjectConfig.images?.[0]?.url ||
+    props.subjectConfig.image ||
+    null
+  );
+});
 
 // Scaler Wrapper Style (Dynamically expands/shrinks layout box for parent scrollbars)
-const canvasScalerStyle = computed(() => {
-  const w = props.canvasConfig.width * props.zoomScale
-  const h = props.canvasConfig.height * props.zoomScale
+const canvasScalerStyle = computed<CSSProperties>(() => {
+  const w = props.canvasConfig.width * props.zoomScale;
+  const h = props.canvasConfig.height * props.zoomScale;
   return {
     width: `${w}px`,
     height: `${h}px`,
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: '0',
-  }
-})
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: "0",
+  };
+});
 
 // Canvas Container Styles
-const canvasContainerStyle = computed(() => {
+const canvasContainerStyle = computed<CSSProperties>(() => {
   return {
     width: `${props.canvasConfig.width}px`,
     height: `${props.canvasConfig.height}px`,
     transform: `scale(${props.zoomScale})`,
-    transformOrigin: 'center center',
-    flexShrink: '0',
-  }
-})
+    transformOrigin: "center center",
+    flexShrink: "0",
+  };
+});
 
 // Grid Layer Style
-const gridStyle = computed(() => {
-  const size = props.canvasConfig.gridSize
+const gridStyle = computed<CSSProperties>(() => {
+  const size = props.canvasConfig.gridSize;
   return {
     backgroundSize: `${size}px ${size}px`,
     backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
                       linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px)`,
-  }
-})
+  };
+});
 
 // Background Image Style
-const bgImageStyle = computed(() => {
+const bgImageStyle = computed<CSSProperties>(() => {
   return {
     backgroundImage: `url(${props.canvasConfig.bgImage})`,
     backgroundSize: props.canvasConfig.bgFit,
-    backgroundPosition: 'center center',
-    backgroundRepeat: 'no-repeat',
+    backgroundPosition: "center center",
+    backgroundRepeat: "no-repeat",
     opacity: props.canvasConfig.bgOpacity,
-  }
-})
+  };
+});
 
 // SVG Path D string
 const pathD = computed(() => {
-  return generateSvgPathD(props.points, props.curveType)
-})
+  return generateSvgPathD(props.points, props.curveType);
+});
 
 // Animated Subject Absolute Positioning & 3D Transform (X, Y, Z Rotation Locks)
-const subjectStyle = computed(() => {
-  const { x, y, angle } = props.currentPosition
-  const { width, height, borderRadius, bgColor, borderColor, borderWidth, autoRotate, angleOffset, shadow, originX, originY } = props.subjectConfig
-  
-  const ox = originX ?? 50
-  const oy = originY ?? 50
+const subjectStyle = computed<CSSProperties>(() => {
+  const { x, y, angle } = props.currentPosition;
+  const {
+    width,
+    height,
+    borderRadius,
+    bgColor,
+    borderColor,
+    borderWidth,
+    autoRotate,
+    angleOffset,
+    shadow,
+    originX,
+    originY,
+  } = props.subjectConfig;
 
-  const lockRotateX = props.animConfig?.lockRotateX ?? false
-  const fixedAngleX = props.animConfig?.fixedAngleX ?? 0
-  const lockRotateY = props.animConfig?.lockRotateY ?? false
-  const fixedAngleY = props.animConfig?.fixedAngleY ?? 0
-  const lockRotateZ = props.animConfig?.lockRotateZ ?? false
-  const fixedAngleZ = props.animConfig?.fixedAngleZ ?? 0
+  const ox = originX ?? 50;
+  const oy = originY ?? 50;
+
+  const lockRotateX = props.animConfig?.lockRotateX ?? false;
+  const fixedAngleX = props.animConfig?.fixedAngleX ?? 0;
+  const lockRotateY = props.animConfig?.lockRotateY ?? false;
+  const fixedAngleY = props.animConfig?.fixedAngleY ?? 0;
+  const lockRotateZ = props.animConfig?.lockRotateZ ?? false;
+  const fixedAngleZ = props.animConfig?.fixedAngleZ ?? 0;
 
   // Z Axis Rotation (Path Tangent Angle or Lock Fixed Angle)
-  let rotZ = lockRotateZ ? fixedAngleZ : (autoRotate ? angle + angleOffset : 0)
-  rotZ = ((rotZ % 360) + 360) % 360
+  let rotZ = lockRotateZ ? fixedAngleZ : autoRotate ? angle + angleOffset : 0;
+  rotZ = ((rotZ % 360) + 360) % 360;
 
   // X Axis Rotation (Pitch / Tilt)
-  const rotX = lockRotateX ? fixedAngleX : 0
+  const rotX = lockRotateX ? fixedAngleX : 0;
 
   // Y Axis Rotation (Yaw / Mirror Flip)
-  const rotY = lockRotateY ? fixedAngleY : 0
+  const rotY = lockRotateY ? fixedAngleY : 0;
 
   return {
-    position: 'absolute',
+    position: "absolute",
     left: `${x}px`,
     top: `${y}px`,
     width: `${width}px`,
     height: `${height}px`,
     borderRadius: `${borderRadius}%`,
-    backgroundColor: props.subjectConfig.type === 'div' ? bgColor : 'transparent',
-    border: props.subjectConfig.type === 'div' && borderWidth > 0 ? `${borderWidth}px solid ${borderColor}` : 'none',
+    backgroundColor:
+      props.subjectConfig.type === "div" ? bgColor : "transparent",
+    border:
+      props.subjectConfig.type === "div" && borderWidth > 0
+        ? `${borderWidth}px solid ${borderColor}`
+        : "none",
     transform: `translate(-${ox}%, -${oy}%) rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ.toFixed(1)}deg)`,
     transformOrigin: `${ox}% ${oy}%`,
-    boxShadow: shadow && props.subjectConfig.type === 'div' ? '0 10px 25px rgba(0, 0, 0, 0.5)' : 'none',
-    filter: shadow && props.subjectConfig.type === 'image' ? 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4))' : 'none',
-  }
-})
+    boxShadow:
+      shadow && props.subjectConfig.type === "div"
+        ? "0 10px 25px rgba(0, 0, 0, 0.5)"
+        : "none",
+    filter:
+      shadow && props.subjectConfig.type === "image"
+        ? "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4))"
+        : "none",
+  };
+});
 
 // Convert mouse event coordinates to Canvas stage coordinates
 const getStageCoords = (e: MouseEvent) => {
-  const container = document.querySelector('.canvas-container') as HTMLElement
-  if (!container) return { x: 0, y: 0 }
+  const container = document.querySelector(".canvas-container") as HTMLElement;
+  if (!container) return { x: 0, y: 0 };
 
-  const rect = container.getBoundingClientRect()
-  const scale = props.zoomScale
+  const rect = container.getBoundingClientRect();
+  const scale = props.zoomScale;
 
-  const x = (e.clientX - rect.left) / scale
-  const y = (e.clientY - rect.top) / scale
+  const x = (e.clientX - rect.left) / scale;
+  const y = (e.clientY - rect.top) / scale;
 
-  let finalX = Math.round(x)
-  let finalY = Math.round(y)
+  let finalX = Math.round(x);
+  let finalY = Math.round(y);
 
   // Snap to Grid if enabled
   if (props.canvasConfig.snapToGrid && props.canvasConfig.gridSize > 0) {
-    const grid = props.canvasConfig.gridSize
-    finalX = Math.round(finalX / grid) * grid
-    finalY = Math.round(finalY / grid) * grid
+    const grid = props.canvasConfig.gridSize;
+    finalX = Math.round(finalX / grid) * grid;
+    finalY = Math.round(finalY / grid) * grid;
   }
 
   // Constrain inside stage bounds
-  finalX = Math.max(0, Math.min(props.canvasConfig.width, finalX))
-  finalY = Math.max(0, Math.min(props.canvasConfig.height, finalY))
+  finalX = Math.max(0, Math.min(props.canvasConfig.width, finalX));
+  finalY = Math.max(0, Math.min(props.canvasConfig.height, finalY));
 
-  return { x: finalX, y: finalY }
-}
+  return { x: finalX, y: finalY };
+};
 
 // Stage Mousedown (panning setup)
 const onStageMouseDown = (e: MouseEvent) => {
-  if (draggingPointId.value) return
+  if (draggingPointId.value) return;
 
-  isPanningPrep = true
-  hasMovedDuringPan = false
+  isPanningPrep = true;
+  hasMovedDuringPan = false;
   if (wrapperRef.value) {
     panStart = {
       scrollLeft: wrapperRef.value.scrollLeft,
       scrollTop: wrapperRef.value.scrollTop,
       clientX: e.clientX,
       clientY: e.clientY,
-    }
+    };
   }
 
-  window.addEventListener('mousemove', onWindowPanMove)
-  window.addEventListener('mouseup', onWindowPanUp)
-}
+  window.addEventListener("mousemove", onWindowPanMove);
+  window.addEventListener("mouseup", onWindowPanUp);
+};
 
 const onWindowPanMove = (e: MouseEvent) => {
-  if (!isPanningPrep) return
+  if (!isPanningPrep) return;
 
-  const dx = e.clientX - panStart.clientX
-  const dy = e.clientY - panStart.clientY
+  const dx = e.clientX - panStart.clientX;
+  const dy = e.clientY - panStart.clientY;
 
   if (Math.hypot(dx, dy) > 4) {
-    isPanning.value = true
-    hasMovedDuringPan = true
+    isPanning.value = true;
+    hasMovedDuringPan = true;
   }
 
   if (isPanning.value && wrapperRef.value) {
-    wrapperRef.value.scrollLeft = panStart.scrollLeft - dx
-    wrapperRef.value.scrollTop = panStart.scrollTop - dy
+    wrapperRef.value.scrollLeft = panStart.scrollLeft - dx;
+    wrapperRef.value.scrollTop = panStart.scrollTop - dy;
   }
-}
+};
 
 const onWindowPanUp = () => {
-  isPanningPrep = false
-  isPanning.value = false
-  window.removeEventListener('mousemove', onWindowPanMove)
-  window.removeEventListener('mouseup', onWindowPanUp)
-}
+  isPanningPrep = false;
+  isPanning.value = false;
+  window.removeEventListener("mousemove", onWindowPanMove);
+  window.removeEventListener("mouseup", onWindowPanUp);
+};
 
 // Stage Click (Add new point if not dragging/panning)
 const onStageClick = (e: MouseEvent) => {
-  if (hasMovedDuringPan || draggingPointId.value) return
-  const { x, y } = getStageCoords(e)
-  emit('add-point', x, y)
-}
+  if (hasMovedDuringPan || draggingPointId.value) return;
+  const { x, y } = getStageCoords(e);
+  emit("add-point", x, y);
+};
 
 // Candidate Point (+) Click (Insert intermediate point)
 const onCandidateClick = () => {
   if (props.hoveredSegment) {
-    const { insertIndex, point } = props.hoveredSegment
-    emit('insert-point', insertIndex, point.x, point.y)
+    const { insertIndex, point } = props.hoveredSegment;
+    emit("insert-point", insertIndex, point.x, point.y);
   }
-}
+};
 
 // Point Selection Click
 const onPointClick = (point: Point) => {
-  emit('select-point', point.id)
-}
+  emit("select-point", point.id);
+};
 
 // Start Mouse Dragging Point
 const onPointMouseDown = (point: Point, e: MouseEvent) => {
-  draggingPointId.value = point.id
-  emit('select-point', point.id)
+  draggingPointId.value = point.id;
+  emit("select-point", point.id);
 
-  const coords = getStageCoords(e)
+  const coords = getStageCoords(e);
   dragOffset.value = {
     x: coords.x - point.x,
     y: coords.y - point.y,
-  }
+  };
 
-  window.addEventListener('mousemove', onWindowMouseMove)
-  window.addEventListener('mouseup', onWindowMouseUp)
-}
+  window.addEventListener("mousemove", onWindowMouseMove);
+  window.addEventListener("mouseup", onWindowMouseUp);
+};
 
 // Window Mouse Move during point drag
 const onWindowMouseMove = (e: MouseEvent) => {
-  if (!draggingPointId.value) return
+  if (!draggingPointId.value) return;
 
-  const coords = getStageCoords(e)
-  const x = coords.x - dragOffset.value.x
-  const y = coords.y - dragOffset.value.y
+  const coords = getStageCoords(e);
+  const x = coords.x - dragOffset.value.x;
+  const y = coords.y - dragOffset.value.y;
 
-  emit('update-point', draggingPointId.value, x, y)
-}
+  emit("update-point", draggingPointId.value, x, y);
+};
 
 // Window Mouse Up stop point drag
 const onWindowMouseUp = () => {
-  draggingPointId.value = null
-  window.removeEventListener('mousemove', onWindowMouseMove)
-  window.removeEventListener('mouseup', onWindowMouseUp)
-}
+  draggingPointId.value = null;
+  window.removeEventListener("mousemove", onWindowMouseMove);
+  window.removeEventListener("mouseup", onWindowMouseUp);
+};
 
 // Stage Mouse Move (detect segment insertion)
 const onStageMouseMove = (e: MouseEvent) => {
-  if (draggingPointId.value || isPanning.value) return
-  const { x, y } = getStageCoords(e)
-  emit('mouse-move-stage', x, y)
-}
+  if (draggingPointId.value || isPanning.value) return;
+  const { x, y } = getStageCoords(e);
+  emit("mouse-move-stage", x, y);
+};
 
 // Stage Mouse Leave
 const onStageMouseLeave = () => {
-  emit('mouse-leave-stage')
-}
+  emit("mouse-leave-stage");
+};
 
 // Ctrl + Mouse Wheel Zooming Shortcut
 const onWheel = (e: WheelEvent) => {
   if (e.ctrlKey || e.metaKey) {
-    e.preventDefault()
-    const delta = e.deltaY < 0 ? 0.05 : -0.05
-    const newZoom = Math.min(2.5, Math.max(0.4, Number((props.zoomScale + delta).toFixed(2))))
-    emit('update:zoomScale', newZoom)
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.05 : -0.05;
+    const newZoom = Math.min(
+      2.5,
+      Math.max(0.4, Number((props.zoomScale + delta).toFixed(2))),
+    );
+    emit("update:zoomScale", newZoom);
   }
-}
+};
 
 // Keyboard shortcuts for Spacebar panning
 const onKeyDown = (e: KeyboardEvent) => {
-  if (e.code === 'Space' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
-    isSpacePressed.value = true
+  if (
+    e.code === "Space" &&
+    !["INPUT", "TEXTAREA", "SELECT"].includes(
+      (e.target as HTMLElement)?.tagName,
+    )
+  ) {
+    isSpacePressed.value = true;
   }
-}
+};
 const onKeyUp = (e: KeyboardEvent) => {
-  if (e.code === 'Space') {
-    isSpacePressed.value = false
+  if (e.code === "Space") {
+    isSpacePressed.value = false;
   }
-}
+};
 
 onMounted(() => {
   if (wrapperRef.value) {
-    wrapperRef.value.addEventListener('wheel', onWheel, { passive: false })
+    wrapperRef.value.addEventListener("wheel", onWheel, { passive: false });
   }
-  window.addEventListener('keydown', onKeyDown)
-  window.addEventListener('keyup', onKeyUp)
-})
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', onWindowMouseMove)
-  window.removeEventListener('mouseup', onWindowMouseUp)
-  window.removeEventListener('mousemove', onWindowPanMove)
-  window.removeEventListener('mouseup', onWindowPanUp)
-  window.removeEventListener('keydown', onKeyDown)
-  window.removeEventListener('keyup', onKeyUp)
+  window.removeEventListener("mousemove", onWindowMouseMove);
+  window.removeEventListener("mouseup", onWindowMouseUp);
+  window.removeEventListener("mousemove", onWindowPanMove);
+  window.removeEventListener("mouseup", onWindowPanUp);
+  window.removeEventListener("keydown", onKeyDown);
+  window.removeEventListener("keyup", onKeyUp);
   if (wrapperRef.value) {
-    wrapperRef.value.removeEventListener('wheel', onWheel)
+    wrapperRef.value.removeEventListener("wheel", onWheel);
   }
-})
+});
 </script>
 
 <style scoped>
@@ -503,7 +563,9 @@ onUnmounted(() => {
 }
 
 .canvas-scaler {
-  transition: width 0.1s ease-out, height 0.1s ease-out;
+  transition:
+    width 0.1s ease-out,
+    height 0.1s ease-out;
   margin: auto;
 }
 
@@ -565,9 +627,15 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(0.95); }
-  50% { transform: translate(-50%, -50%) scale(1.15); }
-  100% { transform: translate(-50%, -50%) scale(0.95); }
+  0% {
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.95);
+  }
 }
 
 /* Waypoint Nodes */
@@ -612,7 +680,7 @@ onUnmounted(() => {
   font-size: 10px;
   font-weight: 700;
   color: #fff;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
@@ -632,7 +700,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: width 0.2s, height 0.2s;
+  transition:
+    width 0.2s,
+    height 0.2s;
   transform-origin: center center;
 }
 
