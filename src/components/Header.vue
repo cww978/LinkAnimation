@@ -8,7 +8,6 @@ import {
   Trash2,
   Download,
   Upload,
-  Code2,
   Eye,
   Github,
 } from "lucide-vue-next";
@@ -26,7 +25,6 @@ const emit = defineEmits<{
   (e: "clear-points"): void;
   (e: "export-json"): void;
   (e: "import-json", content: string): void;
-  (e: "open-code-modal"): void;
   (e: "open-preview-modal"): void;
 }>();
 
@@ -179,16 +177,6 @@ const onFileImport = (e: Event) => {
       >
         <Eye class="w-4 h-4" />
         <span>预览模式</span>
-      </button>
-
-      <!-- Export Code -->
-      <button
-        class="btn btn-primary"
-        title="导出 CSS / JS 代码"
-        @click="$emit('open-code-modal')"
-      >
-        <Code2 class="w-4 h-4" />
-        <span>导出代码</span>
       </button>
     </div>
   </header>

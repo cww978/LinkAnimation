@@ -9,7 +9,6 @@
       @clear-points="clearPoints"
       @export-json="exportConfigJSON"
       @import-json="importConfigJSON"
-      @open-code-modal="isCodeModalOpen = true"
       @open-preview-modal="isPreviewModalOpen = true"
     />
 
@@ -66,15 +65,6 @@
       @seek="seekTo"
     />
 
-    <!-- Code Export Modal -->
-    <ExportModal
-      v-if="isCodeModalOpen"
-      :points="points"
-      :animConfig="animConfig"
-      :subjectConfig="subjectConfig"
-      @close="isCodeModalOpen = false"
-    />
-
     <!-- Standalone LinkAnimation Class Preview Mode Modal -->
     <PreviewModal
       v-if="isPreviewModalOpen"
@@ -93,7 +83,6 @@ import Header from "./components/Header.vue";
 import CanvasStage from "./components/CanvasStage.vue";
 import ControlPanel from "./components/ControlPanel.vue";
 import PlayerToolbar from "./components/PlayerToolbar.vue";
-import ExportModal from "./components/ExportModal.vue";
 import PreviewModal from "./components/PreviewModal.vue";
 
 import { useRouteEditor } from "./composables/useRouteEditor";
@@ -135,7 +124,6 @@ const {
   seekTo,
 } = useAnimationRunner(points, animConfig, subjectConfig, selectedPointId);
 
-const isCodeModalOpen = ref(false);
 const isPreviewModalOpen = ref(false);
 
 const onUpdateCanvas = (w: number, h: number) => {
