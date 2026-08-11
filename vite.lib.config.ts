@@ -6,11 +6,13 @@ import dts from "vite-plugin-dts";
 export default defineConfig({
   plugins: [
     dts({
-      bundleTypes: true,
+      include: ["src/utils/LinkAnimation.ts", "src/utils/**/*.ts", "src/types/**/*.ts"],
       tsconfigPath: "./tsconfig.json",
+      insertTypesEntry: true,
     }),
   ],
   build: {
+    copyPublicDir: false,
     outDir: "dist-lib",
     lib: {
       entry: path.resolve(__dirname, "src/utils/LinkAnimation.ts"),
