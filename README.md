@@ -19,6 +19,10 @@
   </a>
 </p>
 
+<p align="center">
+  <b>简体中文</b> | <a href="./README_EN.md">English</a> | <a href="./README_JA.md">日本語</a>
+</p>
+
 ---
 
 ## 🔗 在线 Demo 预览
