@@ -1,7 +1,7 @@
-# LinkAnimation - Visual Path Animation Editor & SDK
+# LinkAnimation
 
 <p align="center">
-  <b>A high-performance visual path animation editor and framework-agnostic JavaScript SDK built with Vue 3, TypeScript, and Vite.</b>
+  <b>Visual Path Animation Editor & JavaScript SDK</b>
 </p>
 
 <p align="center">

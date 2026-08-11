@@ -1,7 +1,7 @@
-# LinkAnimation 路径动画编辑器 & 独立运行库
+# LinkAnimation
 
 <p align="center">
-  <b>基于 Vue 3 + TypeScript + Vite 构建的高性能可视化路径动画编辑器及跨框架 JavaScript 运行库</b>
+  <b>可视化路径动画编辑器与 JavaScript SDK</b>
 </p>
 
 <p align="center">

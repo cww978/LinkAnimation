@@ -1,7 +1,7 @@
-# LinkAnimation - パスアニメーションエディタ & ライブラリ
+# LinkAnimation
 
 <p align="center">
-  <b>Vue 3 + TypeScript + Vite で構築された高性能なビジュアルパスアニメーションエディタおよびフレームワークに依存しない JavaScript SDK</b>
+  <b>ビジュアルパスアニメーションエディタ & JavaScript SDK</b>
 </p>
 
 <p align="center">
