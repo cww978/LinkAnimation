@@ -4,13 +4,118 @@
   <b>基于 Vue 3 + TypeScript + Vite 构建的高性能可视化路径动画编辑器及跨框架 JavaScript 运行库</b>
 </p>
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/link-animation-editor">
+    <img src="https://img.shields.io/npm/v/link-animation-editor.svg" alt="npm version">
+  </a>
+  <a href="https://www.npmjs.com/package/link-animation-editor">
+    <img src="https://img.shields.io/npm/dm/link-animation-editor.svg" alt="npm downloads">
+  </a>
+  <a href="https://github.com/cww978/LinkAnimation/blob/main/LICENSE">
+    <img src="https://img.shields.io/npm/l/link-animation-editor.svg" alt="license">
+  </a>
+</p>
+
 ---
 
 ## 📖 项目简介
 
-**LinkAnimation** 是一款强大的可视化路径动画制作工具。你可以通过可视化画布轻松绘制复杂的移动轨迹、设置主体外观与旋转规则、配置每个路径点的独立属性（如停留时间、速度倍率、动态切换主体图片等），并一键导出动画配置 JSON 或嵌入代码。
+**LinkAnimation** 是一款强大的可视化路径动画制作工具与运行库。你可以通过可视化画布轻松绘制复杂的移动轨迹、设置主体外观与旋转规则、配置每个路径点的独立属性（如停留时间、速度倍率、动态切换主体图片等），并一键导出动画配置 JSON。
 
-同时，本项目内置了**完全脱离 UI 框架依赖的轻量级 JavaScript 运行库 (`LinkAnimation`)**。构建生成的运行库可独立运行在 HTML、Vue、React、Angular 等任何前端项目中。
+同时，本项目内置了**完全脱离 UI 框架依赖的轻量级 JavaScript 运行库 (`LinkAnimation`)**。构建生成的运行库可独立运行在 HTML、Vue、React、Angular、Svelte 等任何前端项目中。
+
+---
+
+## ⚡ 快速开始 (NPM 安装)
+
+### 1. 安装 npm 包
+
+```bash
+npm install link-animation-editor
+# 或使用 pnpm / yarn
+pnpm add link-animation-editor
+yarn add link-animation-editor
+```
+
+### 2. 在项目中使用 (Vue / React / TS / JS)
+
+```typescript
+import { LinkAnimation } from 'link-animation-editor'
+import configJson from './route-config.json' // 从编辑器中导出的 JSON 配置文件
+
+// 初始化动画实例
+const animation = new LinkAnimation({
+  container: '#animation-container', // 挂载容器选择器或 DOM 节点
+  config: configJson,                // 导出的 JSON 配置
+  showBg: true,                       // 是否显示背景图
+  showLine: true,                     // 是否显示连线
+  showPoint: true,                    // 是否显示路径点
+  lineType: 'dashed',                 // 路线样式 ('solid' | 'dashed' | 'dot' | 'dashdot')
+  lineColor: '#cccccc',               // 默认路线颜色
+  lineActiveColor: '#1296db',         // 已走过路线激活颜色
+  step: 0,                            // 初始起始点索引
+})
+
+// 播放控制 API
+animation.start()      // 开始播放
+animation.pause()      // 暂停播放
+animation.stop()       // 停止并重置到起点
+animation.seekTo(0.5)  // 跳转到指定时间进度 (单位: 秒)
+animation.stepTo(2)    // 快捷跳转到第 2 个路径点
+animation.stepAdd(1)   // 前进 1 个路径点并触发过渡动画
+animation.stepAdd(-1)  // 后退 1 个路径点并触发过渡动画
+
+// 事件监听
+animation.on('waypoint', ({ index, point, imageSwitched }) => {
+  console.log(`到达路径点 P${index}`, point)
+  if (imageSwitched) {
+    console.log(`切换主图为: ${imageSwitched}`)
+  }
+})
+
+animation.on('finish', () => {
+  console.log('动画播放结束')
+})
+
+// 销毁实例
+// animation.destroy()
+```
+
+### 3. CDN / 原生 HTML `<script>` 引入
+
+你也可以通过 CDN 直接在 HTML 中引入 UMD 构建包：
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>LinkAnimation Demo</title>
+</head>
+<body>
+  <!-- 动画挂载容器 -->
+  <div id="animation-container" style="width: 960px; height: 540px; position: relative;"></div>
+
+  <!-- 使用 UNPKG 或 jsDelivr CDN 引入 -->
+  <script src="https://unpkg.com/link-animation-editor/dist-lib/link-animation.umd.js"></script>
+  <!-- 或: <script src="https://cdn.jsdelivr.net/npm/link-animation-editor/dist-lib/link-animation.umd.js"></script> -->
+
+  <script>
+    const configData = /* 粘贴导出的配置 JSON */;
+
+    const animation = new window.LinkAnimation({
+      container: '#animation-container',
+      config: configData,
+      showLine: true,
+      lineType: 'dashed',
+      lineActiveColor: '#1296db',
+    });
+
+    animation.start();
+  </script>
+</body>
+</html>
+```
 
 ---
 
@@ -39,19 +144,18 @@
 
 ### 📦 4. 导出与跨框架运行库
 - **JSON 导入导出**：方便配置的保存、共享与复用。
-- **代码生成器**：一键生成可在其他项目中直接粘贴运行的代码段。
 - **独立 SDK 打包**：支持打包生成 UMD / ES Module 运行库，无框架依赖。
 
 ---
 
-## 🚀 本地开发与构建
+## 🚀 本地开发与贡献
 
-### 1. 安装依赖
+### 1. 克隆仓库与安装依赖
 
 ```bash
+git clone https://github.com/cww978/LinkAnimation.git
+cd LinkAnimation
 npm install
-# 或使用 pnpm / yarn
-pnpm install
 ```
 
 ### 2. 启动可视化编辑器开发服务
@@ -76,117 +180,8 @@ npm run build:lib
 ```
 打包产物将输出在 `dist-lib/` 目录下：
 - `dist-lib/link-animation.es.js` (ES Module)
-- `dist-lib/link-animation.umd.js` (UMD 格式，适用于原生 HTML `<script>`)
-
----
-
-## 📦 独立运行库 (`LinkAnimation`) 使用指南
-
-### 1. 其他前端项目引入 (Vue / React / Node)
-
-#### 方式 A：文件路径依赖
-
-在其他项目的 `package.json` 中引用本项目：
-
-```json
-{
-  "dependencies": {
-    "link-animation-editor": "file:../LinkAnimation"
-  }
-}
-```
-
-代码中引入并使用：
-
-```typescript
-import { LinkAnimation } from 'link-animation-editor'
-import configJson from './route-config.json' // 从编辑器导出的配置文件
-
-// 初始化动画
-const animation = new LinkAnimation({
-  container: '#animation-container', // 挂载容器选择器或 DOM 节点
-  config: configJson,                // 导出的 JSON 配置
-  showBg: true,                       // 是否显示背景图
-  showLine: true,                     // 是否显示连线
-  showPoint: true,                    // 是否显示路径点
-  lineType: 'dashed',                 // 路线样式 ('solid' | 'dashed' | 'dot' | 'dashdot')
-  lineColor: '#cccccc',               // 默认路线颜色
-  lineActiveColor: '#1296db',         // 已走过路线激活颜色
-  step: 0,                            // 初始起始点索引
-})
-
-// 控制 API
-animation.start()      // 开始播放
-animation.pause()      // 暂停播放
-animation.stop()       // 停止并回到起点
-animation.seekTo(0.5)  // 跳转到指定时间进度 (单位: 秒)
-animation.stepTo(2)    // 快捷跳转到第 2 个路径点
-animation.stepAdd(1)   // 前进 1 个路径点并触发过渡动画
-animation.stepAdd(-1)  // 后退 1 个路径点并触发过渡动画
-
-// 事件监听
-animation.on('waypoint', ({ index, point, imageSwitched }) => {
-  console.log(`到达路径点 P${index}`, point)
-  if (imageSwitched) {
-    console.log(`切换主图为: ${imageSwitched}`)
-  }
-})
-
-animation.on('finish', () => {
-  console.log('动画播放结束')
-})
-
-// 销毁实例
-// animation.destroy()
-```
-
-#### 方式 B：复制 ES 模块文件
-
-将 `dist-lib/link-animation.es.js` 复制到目标项目的 `src/utils/` 目录中：
-
-```javascript
-import { LinkAnimation } from './utils/link-animation.es.js'
-
-const animation = new LinkAnimation({
-  container: '#animation-container',
-  config: configJson,
-})
-animation.start()
-```
-
-### 2. 原生 HTML `<script>` 标签引入
-
-将 `dist-lib/link-animation.umd.js` 引入网页：
-
-```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <title>LinkAnimation Demo</title>
-</head>
-<body>
-  <!-- 动画挂载容器 -->
-  <div id="animation-container" style="width: 960px; height: 540px; position: relative;"></div>
-
-  <!-- 引入 UMD 库文件 -->
-  <script src="./dist-lib/link-animation.umd.js"></script>
-  <script>
-    const configData = /* 粘贴导出的配置 JSON */;
-
-    const animation = new window.LinkAnimation({
-      container: '#animation-container',
-      config: configData,
-      showLine: true,
-      lineType: 'dashed',
-      lineActiveColor: '#1296db',
-    });
-
-    animation.start();
-  </script>
-</body>
-</html>
-```
+- `dist-lib/link-animation.umd.js` (UMD 格式)
+- `dist-lib/index.d.ts` (TypeScript 类型声明)
 
 ---
 
@@ -197,11 +192,10 @@ LinkAnimation/
 ├── dist-lib/               # 独立运行库打包产物目录
 ├── public/                 # 静态资源
 ├── src/
-│   ├── assets/             # 资源文件 (图标、图标等)
+│   ├── assets/             # 资源文件 (图标等)
 │   ├── components/         # 编辑器 UI 组件
 │   │   ├── CanvasStage.vue    # 核心画布交互视图
 │   │   ├── ControlPanel.vue   # 右侧属性配置面板
-│   │   ├── ExportModal.vue    # 代码与 JSON 导出弹窗
 │   │   ├── Header.vue         # 顶部导航栏与文件导入导出
 │   │   ├── PlayerToolbar.vue  # 底部悬浮播放控制条
 │   │   └── PreviewModal.vue   # 运行库预览弹窗
