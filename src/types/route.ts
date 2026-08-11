@@ -18,6 +18,7 @@ export interface Point {
 export interface CanvasConfig {
   width: number
   height: number
+  bgColor?: string
   bgImage: string | null
   bgVisible?: boolean // Whether to show background image (default true)
   bgFit: 'contain' | 'cover' | 'fill'

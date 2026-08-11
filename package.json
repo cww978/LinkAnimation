@@ -1,6 +1,6 @@
 {
   "name": "link-animation-editor",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "main": "./dist-lib/link-animation.umd.js",
   "module": "./dist-lib/link-animation.es.js",

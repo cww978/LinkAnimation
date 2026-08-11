@@ -35,7 +35,7 @@
             </select>
           </div>
 
-          <!-- Show Bg, Show Line & Show Point Toggles -->
+          <!-- Show Bg Toggle & Sub-options -->
           <div class="form-group mb-2">
             <label class="checkbox-label">
               <input
@@ -43,9 +43,46 @@
                 v-model="showBg"
                 @change="recreateInstance"
               />
-              <span>显示背景图 (showBg)</span>
+              <span>显示背景 (showBg)</span>
             </label>
           </div>
+
+          <template v-if="showBg">
+            <div class="input-grid mb-2">
+              <div class="form-group">
+                <label>背景颜色 (bgColor)</label>
+                <div class="color-picker">
+                  <input
+                    type="color"
+                    v-model="bgColor"
+                    @change="recreateInstance"
+                  />
+                  <span class="text-xs font-mono">{{ bgColor }}</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>快速透明</label>
+                <button
+                  type="button"
+                  class="btn-sm btn-secondary h-7"
+                  @click="bgColor = 'transparent'; recreateInstance()"
+                >
+                  设置为 transparent
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group mb-2">
+              <label>背景图片 URL (bgImage)</label>
+              <input
+                type="text"
+                v-model="bgImage"
+                placeholder="例如: https://... 或 /assets/bg.png"
+                class="step-input"
+                @change="recreateInstance"
+              />
+            </div>
+          </template>
 
           <div class="form-group mb-2">
             <label class="checkbox-label">
@@ -228,7 +265,9 @@ const emit = defineEmits<{
 let instance: LinkAnimation | null = null;
 
 const easing = ref<EasingType>(props.animConfig.easing || "ease-in-out");
-const showBg = ref(true);
+const showBg = ref(props.canvasConfig.bgVisible ?? true);
+const bgColor = ref(props.canvasConfig.bgColor || "#0f172a");
+const bgImage = ref(props.canvasConfig.bgImage || "");
 const showLine = ref(true);
 const showPoint = ref(true);
 const lineType = ref<LineType>("dashed");
@@ -260,6 +299,8 @@ const recreateInstance = () => {
       },
       easing: easing.value,
       showBg: showBg.value,
+      bgColor: bgColor.value,
+      bgImage: bgImage.value,
       showLine: showLine.value,
       showPoint: showPoint.value,
       lineType: lineType.value,

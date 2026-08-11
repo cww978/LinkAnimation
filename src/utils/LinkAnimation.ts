@@ -35,6 +35,8 @@ export interface LinkAnimationOptions {
       }
     | string;
   showBg?: boolean;
+  bgColor?: string;
+  bgImage?: string;
   showLine?: boolean;
   showPoint?: boolean;
   showPoints?: boolean;
@@ -46,6 +48,7 @@ export interface LinkAnimationOptions {
   easing?: EasingType;
   duration?: number;
   speed?: number;
+  responsive?: boolean;
 }
 
 export class LinkAnimation {
@@ -71,6 +74,8 @@ export class LinkAnimation {
   private lineColor: string;
   private lineActiveColor: string;
   private step: number;
+  private responsive: boolean = true;
+  private resizeObserver: ResizeObserver | null = null;
 
   private isPlaying = false;
   private isPaused = false;
@@ -104,7 +109,8 @@ export class LinkAnimation {
     this.canvasConfig = {
       width: 960,
       height: 540,
-      bgImage: null,
+      bgColor: options.bgColor || parsedConfig.canvasConfig?.bgColor || "#0f172a",
+      bgImage: options.bgImage !== undefined ? options.bgImage : (parsedConfig.canvasConfig?.bgImage || null),
       bgFit: "cover",
       bgOpacity: 1,
       gridVisible: false,
@@ -112,6 +118,9 @@ export class LinkAnimation {
       snapToGrid: false,
       ...(parsedConfig.canvasConfig || {}),
     };
+
+    if (options.bgColor) this.canvasConfig.bgColor = options.bgColor;
+    if (options.bgImage !== undefined) this.canvasConfig.bgImage = options.bgImage;
 
     this.subjectConfig = {
       type: "div",
@@ -160,6 +169,7 @@ export class LinkAnimation {
     this.lineColor = options.lineColor || "#cccccc";
     this.lineActiveColor = options.lineActiveColor || "#1296db";
     this.step = options.step ?? 0;
+    this.responsive = options.responsive ?? true;
 
     // Resolve container
     if (typeof options.container === "string") {
@@ -239,6 +249,8 @@ export class LinkAnimation {
     // Clear previous
     this.containerEl.innerHTML = "";
 
+    const effectiveBgColor = this.showBg ? (this.canvasConfig.bgColor || "#0f172a") : "transparent";
+
     // Create Stage Container
     this.stageEl = document.createElement("div");
     this.stageEl.className = "link-animation-stage";
@@ -247,10 +259,14 @@ export class LinkAnimation {
       width: `${this.canvasConfig.width}px`,
       height: `${this.canvasConfig.height}px`,
       overflow: "hidden",
-      backgroundColor: "#0f172a",
-      borderRadius: "12px",
+      backgroundColor: effectiveBgColor,
+      borderRadius: "0px",
       userSelect: "none",
     });
+
+    if (this.responsive) {
+      this.setupResponsiveScaling();
+    }
 
     // Background Image
     if (this.showBg && this.canvasConfig.bgImage) {
@@ -749,8 +765,51 @@ export class LinkAnimation {
     }
   }
 
+  public updateResponsiveScale = () => {
+    if (!this.containerEl || !this.stageEl) return;
+
+    const rect = this.containerEl.getBoundingClientRect();
+    const cw = rect.width || this.containerEl.clientWidth;
+    const ch = rect.height || this.containerEl.clientHeight;
+
+    if (cw > 0 && ch > 0 && this.canvasConfig.width > 0 && this.canvasConfig.height > 0) {
+      const scaleX = cw / this.canvasConfig.width;
+      const scaleY = ch / this.canvasConfig.height;
+
+      Object.assign(this.stageEl.style, {
+        transformOrigin: "top left",
+        transform: `scale(${scaleX}, ${scaleY})`,
+      });
+    }
+  };
+
+  private setupResponsiveScaling() {
+    if (!this.containerEl) return;
+    this.cleanupResponsiveObserver();
+
+    this.updateResponsiveScale();
+
+    if (typeof ResizeObserver !== "undefined") {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.updateResponsiveScale();
+      });
+      this.resizeObserver.observe(this.containerEl);
+    } else {
+      window.addEventListener("resize", this.updateResponsiveScale);
+    }
+  }
+
+  private cleanupResponsiveObserver() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    window.removeEventListener("resize", this.updateResponsiveScale);
+  }
+
   public destroy() {
     this.stop();
+    this.cleanupResponsiveObserver();
     this.eventListeners.clear();
     if (this.stageEl && this.stageEl.parentNode) {
       this.stageEl.parentNode.removeChild(this.stageEl);
