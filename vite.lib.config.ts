@@ -1,8 +1,15 @@
 import { defineConfig } from 'vite'
 import path from 'path'
+import dts from 'vite-plugin-dts'
 
 // Vite Library Build Configuration for LinkAnimation Class
 export default defineConfig({
+  plugins: [
+    dts({
+      rollupTypes: true,
+      tsconfigPath: './tsconfig.json',
+    }),
+  ],
   build: {
     outDir: 'dist-lib',
     lib: {
