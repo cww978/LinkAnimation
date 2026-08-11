@@ -5,6 +5,9 @@
 </p>
 
 <p align="center">
+  <a href="https://cww978.github.io/LinkAnimation/">
+    <img src="https://img.shields.io/badge/Demo-%E5%9C%A8%E7%BA%BF%E9%A2%84%E8%A7%88-brightgreen.svg" alt="Live Demo">
+  </a>
   <a href="https://www.npmjs.com/package/link-animation-editor">
     <img src="https://img.shields.io/npm/v/link-animation-editor.svg" alt="npm version">
   </a>
@@ -18,11 +21,17 @@
 
 ---
 
+## 🔗 在线 Demo 预览
+
+👉 **[点击体验在线路径动画编辑器](https://cww978.github.io/LinkAnimation/)**
+
+---
+
 ## 📖 项目简介
 
 **LinkAnimation** 是一款强大的可视化路径动画制作工具与运行库。你可以通过可视化画布轻松绘制复杂的移动轨迹、设置主体外观与旋转规则、配置每个路径点的独立属性（如停留时间、速度倍率、动态切换主体图片等），并一键导出动画配置 JSON。
 
-同时，本项目内置了**完全脱离 UI 框架依赖的轻量级 JavaScript 运行库 (`LinkAnimation`)**。构建生成的运行库可独立运行在 HTML、Vue、React、Angular、Svelte 等任何前端项目中。
+同时，本项目内置了**完全脱离 UI 框架依赖的轻量级 JavaScript 运行库 (`LinkAnimation`)**。构建生成的运行库可独立运行在 HTML、Vue、React、Angular、Svelte 等任何前端项目中，并内置了针对移动端多尺寸屏幕的**响应式自动等比缩放**能力。
 
 ---
 
@@ -47,7 +56,10 @@ import configJson from './route-config.json' // 从编辑器中导出的 JSON �
 const animation = new LinkAnimation({
   container: '#animation-container', // 挂载容器选择器或 DOM 节点
   config: configJson,                // 导出的 JSON 配置
-  showBg: true,                       // 是否显示背景图
+  responsive: true,                   // 【v1.0.3 新增】开启移动端多端屏幕响应式自适应等比缩放
+  showBg: false,                      // 是否显示背景图（设为 false 即背景透明透出）
+  bgColor: 'transparent',            // 【v1.0.3 新增】自定义背景颜色或 transparent
+  bgImage: '',                        // 【v1.0.3 新增】自定义背景图片 URL
   showLine: true,                     // 是否显示连线
   showPoint: true,                    // 是否显示路径点
   lineType: 'dashed',                 // 路线样式 ('solid' | 'dashed' | 'dot' | 'dashdot')
@@ -57,13 +69,13 @@ const animation = new LinkAnimation({
 })
 
 // 播放控制 API
-animation.start()      // 开始播放
-animation.pause()      // 暂停播放
-animation.stop()       // 停止并重置到起点
-animation.seekTo(0.5)  // 跳转到指定时间进度 (单位: 秒)
-animation.stepTo(2)    // 快捷跳转到第 2 个路径点
-animation.stepAdd(1)   // 前进 1 个路径点并触发过渡动画
-animation.stepAdd(-1)  // 后退 1 个路径点并触发过渡动画
+animation.start()            // 开始播放全路径动画
+animation.pause()            // 暂停播放
+animation.stop()             // 停止并重置到起点
+animation.seekTo(0.5)        // 跳转到指定进度比例 (0~1)
+animation.stepTo(2, true)    // 【平滑移动】带过渡动画滑行到第 2 个路径点
+animation.stepAdd(1)         // 前进 1 个路径点并触发平滑过渡动画
+animation.stepAdd(-1)        // 后退 1 个路径点并触发平滑过渡动画
 
 // 事件监听
 animation.on('waypoint', ({ index, point, imageSwitched }) => {
@@ -73,17 +85,17 @@ animation.on('waypoint', ({ index, point, imageSwitched }) => {
   }
 })
 
-animation.on('finish', () => {
+animation.on('end', () => {
   console.log('动画播放结束')
 })
 
-// 销毁实例
+// 组件销毁时清除实例
 // animation.destroy()
 ```
 
 ### 3. CDN / 原生 HTML `<script>` 引入
 
-你也可以通过 CDN 直接在 HTML 中引入 UMD 构建包：
+你可以通过 CDN 直接在 HTML 中引入 UMD 构建包：
 
 ```html
 <!DOCTYPE html>
@@ -94,11 +106,10 @@ animation.on('finish', () => {
 </head>
 <body>
   <!-- 动画挂载容器 -->
-  <div id="animation-container" style="width: 960px; height: 540px; position: relative;"></div>
+  <div id="animation-container" style="width: 100%; height: 100vh; position: relative;"></div>
 
   <!-- 使用 UNPKG 或 jsDelivr CDN 引入 -->
   <script src="https://unpkg.com/link-animation-editor/dist-lib/link-animation.umd.js"></script>
-  <!-- 或: <script src="https://cdn.jsdelivr.net/npm/link-animation-editor/dist-lib/link-animation.umd.js"></script> -->
 
   <script>
     const configData = /* 粘贴导出的配置 JSON */;
@@ -106,6 +117,7 @@ animation.on('finish', () => {
     const animation = new window.LinkAnimation({
       container: '#animation-container',
       config: configData,
+      responsive: true,
       showLine: true,
       lineType: 'dashed',
       lineActiveColor: '#1296db',
@@ -119,99 +131,73 @@ animation.on('finish', () => {
 
 ---
 
-## ✨ 核心特性
+## 🛠️ API 配置项说明 (v1.0.3)
 
-### 🎨 1. 可视化画布与路径编辑
-- **自由交互编辑**：点击添加路径点、拖拽调整节点位置、选中删除节点。
-- **智能插点**：悬停在连线上可动态插入新路径点。
-- **自定义背景图**：支持上传背景图、设置适应模式（`contain` / `cover` / `fill`）、透明度调节及显示/隐藏控制。
-- **网格辅助系统**：可自定义网格大小，支持开启**网格吸附（Snap to Grid）**功能。
-- **多种轨迹类型**：支持**平滑贝塞尔曲线**（Smooth Curve）与**直线段**（Linear Route）平滑切换。
-
-### 🤖 2. 动画主体与多图管理
-- **双主体类型**：支持图片主体与自定义 CSS/Div 主体（背景色、边框、圆角、文字、阴影等）。
-- **多图切换**：支持为主体上传多张备选图片，设置默认主图。
-- **路径点触发换图**：可指定主体到达某个路径点（Waypoint）时**自动切换指定图片**。
-- **灵活旋转控制**：
-  - 支持**切线自动旋转 (Auto Rotate)** 配合角度偏移 (Angle Offset)。
-  - 支持指定旋转中心原点 (Origin X / Origin Y)。
-  - 支持锁定或固定 X / Y / Z 三轴旋转角度。
-
-### ⏱️ 3. 细粒度动画与播放控制
-- **独立路径点控制**：为每个路径点单独配置**停留时长 (Pause Duration)** 和**局部速度倍率 (Speed Multiplier)**。
-- **丰富动画参数**：总时长控制、缓动函数选择（Linear, Ease, Ease-In, Ease-Out, Bounce 等）、循环播放 (Loop) 及往复播放 (Yoyo)。
-- **全功能播放器**：播放、暂停、复位、进度条拖拽跳帧。
-
-### 📦 4. 导出与跨框架运行库
-- **JSON 导入导出**：方便配置的保存、共享与复用。
-- **独立 SDK 打包**：支持打包生成 UMD / ES Module 运行库，无框架依赖。
+| 参数名 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `container` | `string \| HTMLElement` | - | 挂载容器的选择器（如 `'#box'`）或 DOM 元素对象 |
+| `config` | `object \| string` | - | 编辑器导出的动画配置 JSON 对象或 JSON 字符串 |
+| `responsive` | `boolean` | `true` | **【v1.0.3 新增】** 开启移动端/多屏幕等比响应式自适应缩放 |
+| `showBg` | `boolean` | `true` | 是否显示背景（设为 `false` 可实现完全背景透明透出） |
+| `bgColor` | `string` | `'#0f172a'` | **【v1.0.3 新增】** 背景颜色，支持 `'transparent'` 或自定义 Hex/RGB |
+| `bgImage` | `string` | `null` | **【v1.0.3 新增】** 动态覆盖背景图片 URL 地址 |
+| `showLine` | `boolean` | `true` | 是否显示轨迹路线连接线 |
+| `showPoint` | `boolean` | `true` | 是否显示路径节点圆点 |
+| `lineType` | `'solid' \| 'dashed' \| 'dot' \| 'dashdot'` | `'dashed'` | 连线线型样式 |
+| `lineColor` | `string` | `'#cccccc'` | 未走过路线基础颜色 |
+| `lineActiveColor` | `string` | `'#1296db'` | 已走过路线高亮激活颜色 |
+| `step` | `number` | `0` | 初始开始路径点索引 |
+| `curveType` | `'smooth' \| 'linear'` | `'smooth'` | 轨迹算法类型 (贝塞尔平滑曲线 / 折线) |
+| `easing` | `EasingType` | `'ease-in-out'` | 动画缓动函数 (`linear`, `ease`, `ease-in`, `ease-out`, `bounce`) |
+| `duration` | `number` | - | 覆盖全局动画播放总时长（秒） |
+| `speed` | `number` | `1` | 动画播放速度倍率 |
 
 ---
 
-## 🚀 本地开发与贡献
+## ✨ 核心特性
 
-### 1. 克隆仓库与安装依赖
+### 📱 1. 移动端与多端屏幕自适应 (`v1.0.3`)
+- **零坐标换算**：在 `750x1624` 或任意设计稿基准尺寸下制作的轨迹，直接放到移动端网页 `width: 100%` 容器中挂载。
+- **自动等比缩放**：内置 `ResizeObserver` + CSS `transform: scale()`，自动平滑等比适配各种手机屏幕。
+
+### 🎨 2. 可视化画布与路径编辑
+- **自由交互编辑**：点击添加路径点、拖拽调整节点位置、选中删除节点。
+- **智能插点**：悬停在连线上可动态插入新路径点。
+- **自定义背景**：支持设置背景颜色、图片 URL、适应模式（`contain` / `cover` / `fill`）及透明控制。
+- **网格辅助系统**：可自定义网格大小，支持开启**网格吸附（Snap to Grid）**功能。
+- **多种轨迹类型**：支持**平滑贝塞尔曲线**与**直线段**切换。
+
+### 🤖 3. 动画主体与多图管理
+- **双主体类型**：支持图片主体与自定义 CSS/Div 主体。
+- **多图切换**：支持为主体上传多张备选图片。
+- **路径点触发换图**：可指定主体到达某个路径点（Waypoint）时**自动切换指定图片**。
+- **灵活旋转控制**：支持切线自动旋转 (Auto Rotate)、旋转中心原点控制及三轴旋转锁定。
+
+### ⏱️ 4. 细粒度动画与播放控制
+- **节点控制**：独立配置每个节点的停留时长 (Pause Duration) 与速度倍率 (Speed Multiplier)。
+- **平滑步进导航**：调用 `stepTo(index, true)` 即可从当前位置平滑滑行到指定打卡节点。
+
+---
+
+## 🚀 本地开发与构建
 
 ```bash
+# 1. 克隆仓库与安装依赖
 git clone https://github.com/cww978/LinkAnimation.git
 cd LinkAnimation
 npm install
-```
 
-### 2. 启动可视化编辑器开发服务
-
-```bash
+# 2. 启动可视化编辑器开发服务
 npm run dev
-```
-启动后在浏览器打开 `http://localhost:5173` 即可使用路径动画编辑器。
 
-### 3. 构建编辑器应用
-
-```bash
+# 3. 构建在线预览网页 (Vite)
 npm run build
-```
 
-### 4. 构建独立运行库 (SDK)
-
-将核心动画引擎打包为独立的 JS 库文件：
-
-```bash
+# 4. 构建独立运行库 SDK (dist-lib/)
 npm run build:lib
-```
-打包产物将输出在 `dist-lib/` 目录下：
-- `dist-lib/link-animation.es.js` (ES Module)
-- `dist-lib/link-animation.umd.js` (UMD 格式)
-- `dist-lib/index.d.ts` (TypeScript 类型声明)
 
----
-
-## 🛠️ 项目目录结构
-
-```
-LinkAnimation/
-├── dist-lib/               # 独立运行库打包产物目录
-├── public/                 # 静态资源
-├── src/
-│   ├── assets/             # 资源文件 (图标等)
-│   ├── components/         # 编辑器 UI 组件
-│   │   ├── CanvasStage.vue    # 核心画布交互视图
-│   │   ├── ControlPanel.vue   # 右侧属性配置面板
-│   │   ├── Header.vue         # 顶部导航栏与文件导入导出
-│   │   ├── PlayerToolbar.vue  # 底部悬浮播放控制条
-│   │   └── PreviewModal.vue   # 运行库预览弹窗
-│   ├── composables/        # 组合式函数 (编辑器状态与动画逻辑)
-│   │   ├── useAnimationRunner.ts
-│   │   └── useRouteEditor.ts
-│   ├── types/              # TypeScript 类型定义
-│   ├── utils/              # 纯 JS / TS 引擎核心
-│   │   └── LinkAnimation.ts   # 独立运行库 SDK 类实现
-│   ├── App.vue             # 主应用入口视图
-│   ├── main.ts             # 应用启动文件
-│   └── index.ts            # SDK 导出入口
-├── package.json
-├── vite.config.ts          # 应用 Vite 配置
-├── vite.lib.config.ts      # 运行库 Vite 构建配置
-└── README.md
+# 5. 一键部署发布在线 Demo (GitHub Pages)
+npm run deploy
 ```
 
 ---
